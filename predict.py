@@ -11,7 +11,7 @@ args = parser.parse_args()
 
 def _parse_fn(filename):
   image_string = tf.io.read_file(filename)
-  image_decoded = tf.image.decode_jpeg(image_string)
+  image_decoded = tf.image.decode_jpeg(image_string, channels=3)
   #image_decoded = image_decoded[:,:,:3]
   image_normalized = (tf.cast(image_decoded, tf.float32)/255) - 1
   image_resized = tf.image.resize(image_normalized, (args.size, args.size))

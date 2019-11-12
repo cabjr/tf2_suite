@@ -10,7 +10,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description="Convert Keras .h5 file to Tensorflow .pb frozen model.")
 parser.add_argument("--h5", type=str, default="model.h5", help="Keras .h5 file (input)")
-parser.add_argument("--pb", type=str, default="model.pb", help="Tensorflow frozen model (output)")
+parser.add_argument("--pb", type=str, default="./saved_model", help="Path to save Tensorflow frozen model (output)")
 args = parser.parse_args()
 
 K.set_learning_phase(0)
@@ -20,7 +20,7 @@ model_output = model.output.op.name
 
 tf.keras.models.save_model(
     model,
-    "./teste",
+    args.pb,
     overwrite=True,
     include_optimizer=True,
     save_format='tf',
