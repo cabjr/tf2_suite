@@ -7,7 +7,13 @@ from datetime import date, time
 import keras
 import datetime
 print(tf.__version__)
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
 
+config = ConfigProto(log_device_placement=True)
+config.gpu_options.per_process_gpu_memory_fraction=0.9 # don't hog all vRAM
+config.operation_timeout_in_ms=15000   # terminate on long hangs
+sess = InteractiveSession("", config=config)
 
 def str2bool(v):
   if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -18,7 +24,7 @@ def str2bool(v):
     raise argparse.ArgumentTypeError('Boolean value expected.')
 
 BATCH_SIZE = 8
-FC_LAYERS = [1024, 1024]
+FC_LAYERS = [256, 256]
 
 def scheduler(epoch):
   if epoch < 10:
@@ -120,8 +126,8 @@ def train():
       print('You must specify a model architecture ("InceptionV3", "MobileNet", "MobileNetV2", "InceptionResNetV2", "ResNet", "NasNet", "VGG16", "VGG19", "Xception")')
       return
     base_model = build_finetune_model(base_model, args.dropout, FC_LAYERS, len(os.listdir(args.dataset+"/train")))
-    train_data = (train_data.map(_parse_fn).shuffle(buffer_size=len(glob.glob(args.dataset+"/train/*/*.jpg"))).batch(BATCH_SIZE))
-    val_data = (val_data.map(_parse_fn).shuffle(buffer_size=len(glob.glob(args.dataset+"/val/*/*.jpg"))).batch(BATCH_SIZE))
+    train_data = (train_data.map(_parse_fn).shuffle(buffer_size=4000).batch(BATCH_SIZE))
+    val_data = (val_data.map(_parse_fn).shuffle(buffer_size=800).batch(BATCH_SIZE))
 
     #OPTIMIZERS
     lr = args.lr
@@ -143,8 +149,8 @@ def train():
     outDir = args.output_dir + "/ckpt/%s" % (str(dt.day)+"_"+str(dt.month)+"_"+str(dt.hour)+"-"+str(dt.minute)+"/")
     if not os.path.exists(outDir):
       os.makedirs(outDir)
-    
-    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(outDir+"/model_"+args.model+"_-{epoch:02d}-{val_accuracy:.2f}.hdf5", monitor='val_accuracy', verbose=1,save_best_only=False, save_weights_only=False, save_frequency='epoch')
+
+    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(outDir+"/model_"+args.model+"_-{epoch:02d}.hdf5", monitor='val_accuracy', verbose=1,save_best_only=False, save_weights_only=False, save_frequency='epoch')
     if (args.finetune == False):
       model = base_model
     else:
